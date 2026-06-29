@@ -71,10 +71,33 @@ Hermes Agent 汇报结果
 | `project-center/*` | Hermes Agent（主 Agent） | ✅ 豪哥（只读给子 Agent） |
 | `pipecat_start.sh` | Hermes Agent | ✅ 豪哥 |
 
-## 五、信息拉齐机制
+## 五、信息拉齐机制（铁律）
 
-所有 Agent 执行任务前必须读取项目中心文件：
-- 主 Agent：全量读取 12 个文件
-- 子 Agent：主 Agent 在 context 中提供必要信息；如需更多上下文可要求读取指定文件
+### 5.1 执行前必读
 
-**项目中心文件路径**：`~/projects/houyang-ai/pipecat-ai/project-center/`
+所有 Agent 执行任何任务前，必须读取项目中心文件：
+
+| Agent | 读什么 | 怎么读 |
+|-------|--------|--------|
+| **主 Agent**（Hermes） | `project-center/` 下**全部文件** | 全量读取，逐文件过 |
+| **子 Agent** | 由主 Agent 在 context 中提供必要信息 | 不需自己读，但 context 必须包含关键上下文 |
+
+### 5.2 执行后必更
+
+主 Agent 在每轮任务结束后，必须**立即执行**（不积压、不拖延）：
+
+```
+1. 更新所有受影响的中心文件（联动写入）
+2. git add → git commit → git push
+3. 汇报时附带更新摘要
+```
+
+### 5.3 谁延迟谁负责
+
+如果因更新不及时导致子 Agent 信息不一致、产生冲突或重复劳动，**责任在主 Agent**。
+
+### 5.4 项目中心文件路径
+
+```
+~/projects/houyang-ai/pipecat-ai/project-center/
+```
