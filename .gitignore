@@ -24,6 +24,9 @@ Thumbs.db
 /tmp/pipecat_*
 records/*.wav
 records/*/
+# SQLite WAL (transient)
+records/*.db-wal
+records/*.db-shm
 
 # IDE
 .vscode/
