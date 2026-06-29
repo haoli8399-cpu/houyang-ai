@@ -1,0 +1,92 @@
+{
+  "schema_version": "2.0",
+  "project": "pipecat-phone-customer-service",
+  "phase": "mvp",
+  "last_updated": "2026-06-29T23:33:00+08:00",
+  "locks": {
+    "agent-1": { "locked": false, "issue": "", "rejectionCount": 0 },
+    "agent-2": { "locked": false, "issue": "", "rejectionCount": 0 }
+  },
+  "active_issues": {
+    "agent-1": "",
+    "agent-2": ""
+  },
+  "active_prs": {
+    "agent-1": "",
+    "agent-2": ""
+  },
+  "status": "all_services_running",
+  "services": {
+    "freeswitch": {
+      "status": "running",
+      "port_sip": 5060,
+      "port_esl": 8022
+    },
+    "ai_pipeline": {
+      "status": "running",
+      "entry": "ai_pipeline.py"
+    },
+    "cosyvoice_tts": {
+      "status": "running",
+      "port": 9880
+    },
+    "faster_whisper_asr": {
+      "status": "running",
+      "note": "CPU int8 模式，torch 未安装；已预热完成"
+    },
+    "deepseek_api": {
+      "status": "configured",
+      "model": "deepseek-chat"
+    }
+  },
+  "blockers": [
+    {
+      "id": "B-001",
+      "issue": "ASR torch 未安装（CPU int8 模式）",
+      "priority": "low",
+      "status": "accepted",
+      "note": "CPU int8 可用，不影响通话，可后续安装 torch 开启 MPS 加速"
+    },
+    {
+      "id": "B-006",
+      "issue": "转人工无坐席",
+      "priority": "medium",
+      "status": "pending"
+    },
+    {
+      "id": "B-007",
+      "issue": "QClaw 代理拦截 Python HTTP -> 需 curl 绕行",
+      "priority": "low",
+      "status": "fixed",
+      "note": "TTS is_ready() 用 socket 检测，synthesize() 用 curl 子进程"
+    }
+  ],
+  "recent_decisions": [
+    "D-20260623-001",
+    "D-20260623-002",
+    "D-20260623-003",
+    "D-20260623-004",
+    "D-20260623-005",
+    "D-20260623-006",
+    "D-20260623-007",
+    "D-20260629-001",
+    "D-20260629-002"
+  ],
+  "history": [
+    {
+      "action": "project_center_init_v2",
+      "timestamp": "2026-06-23T17:31:00+08:00",
+      "detail": "补齐 FROZEN/ROADMAP/BUDGET/MANIFEST + CLAUDE_CODE + state_v2 + AGENT_RULES 冲突修复"
+    },
+    {
+      "action": "phase1_batch1_completed",
+      "timestamp": "2026-06-23T17:51:00+08:00",
+      "detail": "S1 launchd plist + S2 VAD + S3 脚本自启，3 文件经 Builder+Reviewer 审查通过"
+    },
+    {
+      "action": "fix_restart_all_services",
+      "timestamp": "2026-06-29T23:33:00+08:00",
+      "detail": "ASR torch 分离修复 + TTS curl 代理绕行 + FreeSWITCH 重启 + 全链路验证通过"
+    }
+  ]
+}

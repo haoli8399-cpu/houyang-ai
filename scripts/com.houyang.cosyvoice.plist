@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.houyang.cosyvoice</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/wudixingyunxingleo/miniconda3/envs/cosyvoice/bin/python</string>
+        <string>/Users/wudixingyunxingleo/projects/houyang-ai/cosyvoice/podcast-engine/server.py</string>
+    </array>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/cosyvoice.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/cosyvoice.log</string>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/wudixingyunxingleo/projects/houyang-ai/cosyvoice/podcast-engine</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/Users/wudixingyunxingleo/miniconda3/envs/cosyvoice/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <key>ThrottleInterval</key>
+    <integer>5</integer>
+</dict>
+</plist>

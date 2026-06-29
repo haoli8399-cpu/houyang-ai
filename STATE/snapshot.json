@@ -1,0 +1,47 @@
+{
+  "snapshot_time": "2026-06-23T17:31:00+08:00",
+  "project": "pipecat-phone-customer-service",
+  "files": {
+    "ai_pipeline.py": {
+      "size_bytes": 21500,
+      "hash": "modified_20260623",
+      "last_modified": "2026-06-23T17:19:00+08:00"
+    },
+    "puresl.py": {
+      "size_bytes": 8803,
+      "hash": "unchanged",
+      "last_modified": "2026-06-23"
+    },
+    "pipecat_start.sh": {
+      "size_bytes": 3787,
+      "hash": "unchanged",
+      "last_modified": "2026-06-23"
+    }
+  },
+  "project_center_files": [
+    "AGENT_RULES.md",
+    "CONSISTENCY_CHECKER.md",
+    "HANDOFF.md",
+    "DECISION_LOG.md",
+    "CHANGELOG.md",
+    "CONTRACT.md",
+    "CODEBUDDY_PROTOCOL.md",
+    "PRD.md",
+    "COLLABORATION.md",
+    "FROZEN.md",
+    "ROADMAP.md",
+    "BUDGET.md",
+    "MANIFEST.md",
+    "codebase_progress.md"
+  ],
+  "state_files": [
+    "state.json",
+    "snapshot.json"
+  ],
+  "claude_code_files": [
+    "SOUL_AGENT1.md",
+    "SOUL_AGENT2.md",
+    "SOUL_REVIEWER.md",
+    "SOUL_OPS.md"
+  ]
+}

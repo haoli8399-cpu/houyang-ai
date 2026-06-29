@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Environment
+.env
+pipecat-venv/
+cosyvoice/
+
+# Runtime
+*.pid
+pipecat.log
+pipeline_stdout.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Audio recordings
+/tmp/pipecat_*
+records/*.wav
+records/*/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
