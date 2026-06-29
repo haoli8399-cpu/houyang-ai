@@ -2,7 +2,7 @@
   "schema_version": "2.0",
   "project": "pipecat-phone-customer-service",
   "phase": "mvp",
-  "last_updated": "2026-06-29T23:33:00+08:00",
+  "last_updated": "2026-06-29T23:56:00+08:00",
   "locks": {
     "agent-1": { "locked": false, "issue": "", "rejectionCount": 0 },
     "agent-2": { "locked": false, "issue": "", "rejectionCount": 0 }
@@ -37,6 +37,10 @@
     "deepseek_api": {
       "status": "configured",
       "model": "deepseek-chat"
+    },
+    "call_records_db": {
+      "status": "running",
+      "note": "SQLite records/calls.db, calls+turns 双表"
     }
   },
   "blockers": [
@@ -70,7 +74,11 @@
     "D-20260623-006",
     "D-20260623-007",
     "D-20260629-001",
-    "D-20260629-002"
+    "D-20260629-002",
+    "D-20260629-003",
+    "D-20260629-004",
+    "D-20260629-005",
+    "D-20260629-006"
   ],
   "history": [
     {
@@ -81,12 +89,17 @@
     {
       "action": "phase1_batch1_completed",
       "timestamp": "2026-06-23T17:51:00+08:00",
-      "detail": "S1 launchd plist + S2 VAD + S3 脚本自启，3 文件经 Builder+Reviewer 审查通过"
+      "detail": "S1 launchd plist + S2 VAD + S3 脚本自启"
     },
     {
       "action": "fix_restart_all_services",
       "timestamp": "2026-06-29T23:33:00+08:00",
-      "detail": "ASR torch 分离修复 + TTS curl 代理绕行 + FreeSWITCH 重启 + 全链路验证通过"
+      "detail": "ASR torch 分离 + TTS curl 代理绕行 + FreeSWITCH 重启 + 全链路验证"
+    },
+    {
+      "action": "call_records_db_implemented",
+      "timestamp": "2026-06-29T23:56:00+08:00",
+      "detail": "db.py (SQLite calls+turns) + ai_pipeline.py 集成 + 录音持久化 to records/{call_id}/"
     }
   ]
 }

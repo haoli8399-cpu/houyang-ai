@@ -32,6 +32,7 @@ import subprocess
 import threading
 import urllib.request
 import urllib.parse
+import shutil
 from pathlib import Path
 from typing import Optional, Callable
 from dataclasses import dataclass
@@ -39,6 +40,9 @@ from dataclasses import dataclass
 # 纯 Python ESL
 sys.path.insert(0, str(Path.home() / "pipecat-ai"))
 import puresl
+
+# 数据库（通话记录）
+import db
 
 log = logging.getLogger("ai_pipeline")
 
@@ -333,6 +337,13 @@ class CallHandler:
         self.turn = 0
         self.llm = LLMClient()
         self.call_active = True
+        self._last_user_audio = ""
+        self._last_assistant_audio = ""
+        # 通话录音目录
+        self.records_dir = Path(config.work_dir) / "records" / uuid[:12]
+        self.records_dir.mkdir(parents=True, exist_ok=True)
+        # 写入数据库
+        db.create_call(uuid, caller, dest)
 
     def run(self):
         log.info(f"📞 新通话: {self.caller} → {self.dest} (uuid={self.uuid[:12]})")
@@ -348,6 +359,9 @@ class CallHandler:
             self._loop()
         except Exception as e:
             log.error(f"通话异常: {e}")
+            db.end_call(self.uuid, "error")
+        else:
+            db.end_call(self.uuid, "completed")
         finally:
             ESLAPI.hangup(self.uuid)
             log.info(f"🔚 通话结束: {self.uuid[:12]}")
@@ -364,6 +378,8 @@ class CallHandler:
 
         while self.call_active and self.turn < 20:
             self.turn += 1
+            self._last_user_audio = ""
+            self._last_assistant_audio = ""
 
             # 收用户语音 → ASR
             user_text = self._capture_speech()
@@ -374,7 +390,10 @@ class CallHandler:
 
             # 检查结束语
             if any(kw in user_text for kw in ["再见", "拜拜", "挂了", "没其他事", "没有要"]):
-                self._speak("感谢您的来电，祝您生活愉快，再见！")
+                farewell = "感谢您的来电，祝您生活愉快，再见！"
+                self._speak(farewell)
+                db.add_turn(self.uuid, self.turn, user_text, farewell, "end",
+                           self._last_user_audio, self._last_assistant_audio)
                 break
 
             # LLM
@@ -385,15 +404,22 @@ class CallHandler:
 
             # 动作
             if reply_obj["action"] == "transfer":
-                self._speak("好的，正在为您转接人工客服，请稍候。")
+                transfer_msg = "好的，正在为您转接人工客服，请稍候。"
+                self._speak(transfer_msg)
+                db.add_turn(self.uuid, self.turn, user_text, transfer_msg, "transfer",
+                           self._last_user_audio, self._last_assistant_audio)
                 ESLAPI.transfer(self.uuid, "9999")
                 break
             elif reply_obj["action"] == "end":
                 self._speak(reply_obj["reply"])
+                db.add_turn(self.uuid, self.turn, user_text, reply_obj["reply"], "end",
+                           self._last_user_audio, self._last_assistant_audio)
                 break
 
             # TTS 播放回复
             self._speak(reply_obj["reply"])
+            db.add_turn(self.uuid, self.turn, user_text, reply_obj["reply"], reply_obj["action"],
+                       self._last_user_audio, self._last_assistant_audio)
 
     def _capture_speech(self) -> Optional[str]:
         """录音 → ASR 转写"""
@@ -423,6 +449,13 @@ class CallHandler:
             if Path(record_path).exists() and Path(record_path).stat().st_size > 1024:
                 text = ASRClient.transcribe(record_path)
                 if text:
+                    # 持久化录音到 records/{call_id}/
+                    dest = self.records_dir / f"turn_{self.turn}_user.wav"
+                    try:
+                        shutil.copy2(record_path, str(dest))
+                        self._last_user_audio = str(dest)
+                    except Exception:
+                        pass
                     log.info(f"🎤 用户: {text[:100]}")
                     return text
             log.info("🤫 用户未说话或录音为静音")
@@ -441,6 +474,13 @@ class CallHandler:
             tts_path = f"/tmp/pipecat_tts_{self.uuid[:8]}_{self.turn}.wav"
             result = TTSClient.synthesize(text, tts_path)
             if result:
+                # 持久化 TTS 音频到 records/{call_id}/
+                dest = self.records_dir / f"turn_{self.turn}_assistant.wav"
+                try:
+                    shutil.copy2(tts_path, str(dest))
+                    self._last_assistant_audio = str(dest)
+                except Exception:
+                    pass
                 ESLAPI.play_file(self.uuid, tts_path)
                 # 估算播放时间（中文正常语速约 3.5 字/秒 + 1s buffer）
                 play_sec = max(1.5, len(text) / 3.5 + 1.0)
@@ -490,6 +530,10 @@ def listen_mode():
     log.info("=" * 50)
     log.info("🚀 Pipecat AI 电话客服 — 监听模式启动")
     log.info("=" * 50)
+
+    # 初始化数据库
+    db.init_db()
+    log.info("🗄️ 通话记录数据库就绪")
 
     conn = puresl.ESLConnection(config.fs_host, config.fs_port, config.fs_password)
     if not conn.connect():
