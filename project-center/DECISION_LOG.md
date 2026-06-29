@@ -17,3 +17,4 @@
 | D-20260629-002 | 2026-06-29 | TTS 修复：`is_ready()` 改用 socket 端口检测 + `synthesize()` 改用 curl 子进程，避开 QClaw 代理对 Python HTTP 的限制 | Hermes Agent | ✅ 已执行 | `ai_pipeline.py` `TTSClient` |
 | D-20260629-003 | 2026-06-29 | 移除硬编码的 DeepSeek API Key，改为环境变量读取，密钥仅存于 .env | Hermes Agent | ✅ 已执行 | `ai_pipeline.py` config |
 | D-20260629-004 | 2026-06-29 | 清理 CodeBuddy 遗留文件 + 初始化 git + 推送到 GitHub（haoli8399-cpu/houyang-ai） | Hermes Agent | ✅ 已执行 | 全部项目 |
+| D-20260629-005 | 2026-06-29 | 多 Agent 架构优化：精简角色（Backend+DevOps→Implementation）、新增子 Agent 验证协议、文件锁规则、TASK.md 生命周期 | Hermes Agent | ✅ 已执行 | COLLABORATION.md, AGENT_RULES.md, FROZEN.md |

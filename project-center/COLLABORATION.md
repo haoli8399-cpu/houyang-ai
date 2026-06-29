@@ -9,14 +9,19 @@
 
 | Agent | 职责 | 触发场景 |
 |-------|------|---------|
-| **Hermes Agent（主 Agent）** | 需求分析、方案设计、代码实现、文档维护、子 Agent 协调调度 | 默认，全权负责人 |
-| **Sub-Agent（子 Agent）** | 执行主 Agent 分发的独立子任务 | 主 Agent 拆分并行任务时 |
-| **Reviewer Agent** | 代码审查、一致性检查、质量把关 | 关键变更的审查环节 |
+| **Hermes Agent（主 Agent / Orchestrator）** | 需求分析、方案设计、任务分发、结果验证、项目中心文件维护、git push | **始终**，全权负责人 |
+| **Implementation Agent（子 Agent）** | 代码修改（ai_pipeline.py / puresl.py / 脚本）+ 运维操作（服务启停 / Docker / 监控） | 需要改代码或执行运维操作时 |
+| **Review Agent（子 Agent）** | 代码审查、一致性检查、安全审计 | **仅 ai_pipeline.py 核心逻辑变更时**启用，常规改动由主 Agent 自行审查 |
 
 ## 二、任务分发规范
 
 ### 方式一：TASK.md（子 Agent 独立窗口）
 主 Agent 将任务写入项目根目录 `TASK.md`，豪哥在各窗口发「读根目录 TASK.md」即可执行。
+
+**TASK.md 生命周期：**
+- 任务完成后，主 Agent **立即清空** TASK.md 或归档到 `TASK_ARCHIVE/`
+- 禁止将已完成的旧任务留在 TASK.md 中
+
 格式：
 
 ```markdown
@@ -52,14 +57,17 @@ Hermes Agent 方案（Phase 2：输出结构化执行计划）
     ↓
 豪哥确认
     ↓
-Hermes Agent 执行（Phase 3）或 分发子 Agent
-    ├── Sub-Agent A（并行子任务）
-    ├── Sub-Agent B（并行子任务）
-    └── Hermes 汇总验证 + 修复遗漏
+Phase 3：执行
+    ├── 单线任务 → Hermes 自己执行
+    ├── 并行可拆 → 分发 Implementation Agent（文件集不重叠）
+    ├── 核心逻辑变更 → + Review Agent 审查
+    └── 错误处理 → 验证失败则打回重做
     ↓
-Hermes Agent 更新项目中心文件 → git push
+Hermes 汇总验证（语法检查 + 一致性扫描 + 修复遗漏）
     ↓
-Hermes Agent 汇报结果
+Hermes 更新项目中心文件 → git push
+    ↓
+Hermes 汇报结果 + 清空/归档 TASK.md
 ```
 
 ## 四、文件所有权
@@ -92,11 +100,28 @@ Hermes Agent 汇报结果
 3. 汇报时附带更新摘要
 ```
 
-### 5.3 谁延迟谁负责
+### 5.3 子 Agent 输出验证协议
+
+主 Agent 在合并子 Agent 结果前，必须执行基础验证：
+
+| 检查项 | 方法 | 不通过处理 |
+|--------|------|-----------|
+| 语法检查 | `python3 -c "compile(...)"` 或 lint | 打回，附错误信息 |
+| 文件完整性 | 目标文件是否存在、关键函数是否保留 | 打回，附差异说明 |
+| 一致性扫描 | 检查是否引用了不存在的函数/变量 | 打回 |
+| 与中心文件对齐 | 修改是否对应已确认的方案 | 打回 |
+
+### 5.4 文件锁规则
+
+- **同一文件同一轮只派给一个子 Agent**，禁止并行修改同一文件
+- 多子 Agent 并行时，各自的文件集必须不重叠
+- 主 Agent 和子 Agent 的文件集也不能重叠（主 Agent 只改 project-center/，子 Agent 不改）
+
+### 5.5 谁延迟谁负责
 
 如果因更新不及时导致子 Agent 信息不一致、产生冲突或重复劳动，**责任在主 Agent**。
 
-### 5.4 项目中心文件路径
+### 5.6 项目中心文件路径
 
 ```
 ~/projects/houyang-ai/pipecat-ai/project-center/
