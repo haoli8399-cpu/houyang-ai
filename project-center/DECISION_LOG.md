@@ -15,3 +15,5 @@
 | D-20260623-007 | 2026-06-23 | S3: 启动脚本集成 CosyVoice 自启 — start 命令自动检查+启动 9880，等待 30s | Builder-1 | ✅ 已执行 | `pipecat_start.sh` |
 | D-20260629-001 | 2026-06-29 | ASR 修复：拆分 `import torch` 防止 torch 未安装时误判 faster-whisper 不可用 | Hermes Agent | ✅ 已执行 | `ai_pipeline.py` `_load()` |
 | D-20260629-002 | 2026-06-29 | TTS 修复：`is_ready()` 改用 socket 端口检测 + `synthesize()` 改用 curl 子进程，避开 QClaw 代理对 Python HTTP 的限制 | Hermes Agent | ✅ 已执行 | `ai_pipeline.py` `TTSClient` |
+| D-20260629-003 | 2026-06-29 | 移除硬编码的 DeepSeek API Key，改为环境变量读取，密钥仅存于 .env | Hermes Agent | ✅ 已执行 | `ai_pipeline.py` config |
+| D-20260629-004 | 2026-06-29 | 清理 CodeBuddy 遗留文件 + 初始化 git + 推送到 GitHub（haoli8399-cpu/houyang-ai） | Hermes Agent | ✅ 已执行 | 全部项目 |
