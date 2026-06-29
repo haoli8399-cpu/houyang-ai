@@ -55,6 +55,34 @@
 
 #### 查看方式
 ```bash
-sqlite3 records/calls.db "SELECT * FROM calls ORDER BY start_time DESC;"
 sqlite3 records/calls.db "SELECT turn_number, user_text, assistant_text FROM turns WHERE call_id='...' ORDER BY turn_number;"
+```
+
+## 2026-06-30（凌晨）
+
+### 🎉 Phase 2 运营后台（Round 1+2 一次性完成）
+
+#### 新增
+- **`admin/app.py`**: FastAPI 后台服务（端口 3001）
+- **`admin/templates/index.html`**: 运营后台前端（SPA，4 个标签页）
+- **`config/` 目录**: prompt.md / welcome.txt / farewell.txt / voice.txt / knowledge/
+- **运营后台功能**:
+  - 📝 配置页：编辑 AI 提示词、欢迎语、结束语
+  - 📚 知识库页：增/删/改/查知识条目（Markdown）
+  - 🎤 音色页：查看可用音色、切换音色、试听 TTS
+  - 📞 通话记录页：查看历史通话、对话详情、播放录音
+  - 🟢 后台首页显示各服务运行状态
+
+#### 改造
+- **`ai_pipeline.py`**: 提示词/欢迎语/结束语/音色均从 `config/` 文件读取，不再硬编码
+- 编辑 `config/prompt.md` → 重启生效（后续可做热更新）
+
+#### 启动方式
+```bash
+cd ~/projects/houyang-ai/pipecat-ai
+# 终端1: AI Pipeline（已在运行）
+# 终端2: 运营后台
+~/pipecat-venv/bin/uvicorn admin.app:app --host 127.0.0.1 --port 3001 --reload
+
+# 浏览器打开：http://localhost:3001
 ```

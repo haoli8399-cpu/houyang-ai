@@ -61,6 +61,36 @@ class Config:
     deepseek_base_url: str = "https://api.deepseek.com"
     work_dir: str = str(Path.home() / "pipecat-ai")
 
+    @property
+    def config_dir(self) -> Path:
+        return Path(self.work_dir) / "config"
+
+    def read_prompt(self) -> str:
+        path = self.config_dir / "prompt.md"
+        if path.exists():
+            return path.read_text(encoding="utf-8").strip()
+        return ""
+
+    def read_welcome(self) -> str:
+        path = self.config_dir / "welcome.txt"
+        if path.exists():
+            return path.read_text(encoding="utf-8").strip()
+        return ""
+
+    def read_farewell(self) -> str:
+        path = self.config_dir / "farewell.txt"
+        if path.exists():
+            return path.read_text(encoding="utf-8").strip()
+        return ""
+
+    def read_voice_speaker(self) -> str:
+        path = self.config_dir / "voice.txt"
+        if path.exists():
+            text = path.read_text(encoding="utf-8").strip()
+            if text:
+                return text
+        return self.cosyvoice_speaker
+
 
 config = Config()
 
@@ -234,7 +264,7 @@ class TTSClient:
             payload = _json.dumps({
                 "text": text,
                 "format": "wav",
-                "speaker": config.cosyvoice_speaker,
+                "speaker": config.read_voice_speaker(),
             })
             result = subprocess.run(
                 ["curl", "-s", "-X", "POST", config.cosyvoice_url,
@@ -259,19 +289,17 @@ class LLMClient:
     """DeepSeek 大模型"""
 
     def __init__(self):
+        prompt = config.read_prompt() or (
+            "你是「成都后仰喜剧」的AI电话客服助手，名字叫小仰。用四川普通话"
+            "（带一点成都味儿）和客户聊天。\n\n规则：\n1. 语气轻松幽默、热情亲切，"
+            "像成都本地朋友一样自然\n2. 先自我介绍，然后问客户需要啥帮助："
+            "买票/咨询演出/转人工\n3. 每句话控制在40字以内，口语化，不要念稿子\n"
+            "4. 可以适当用\"要得撒\"\"巴适得很\"\"莫急嘛\"等成都口头禅增加亲和力\n"
+            "5. 回复最后用JSON包裹："
+            '{"action":"book|transfer|end|info","reply":"你的回复"}'
+        )
         self.messages = [
-            {
-                "role": "system",
-                "content": (
-                    "你是「成都后仰喜剧」的AI电话客服助手，名字叫小仰。用四川普通话（带一点成都味儿）和客户聊天。\n\n"
-                    "规则：\n"
-                    "1. 语气轻松幽默、热情亲切，像成都本地朋友一样自然\n"
-                    "2. 先自我介绍，然后问客户需要啥帮助：买票/咨询演出/转人工\n"
-                    "3. 每句话控制在40字以内，口语化，不要念稿子\n"
-                    "4. 可以适当用\"要得撒\"\"巴适得很\"\"莫急嘛\"等成都口头禅增加亲和力\n"
-                    "5. 回复最后用JSON包裹：{\"action\":\"book|transfer|end|info\",\"reply\":\"你的回复\"}"
-                ),
-            }
+            {"role": "system", "content": prompt},
         ]
 
     def chat(self, user_input: str) -> dict:
@@ -373,7 +401,7 @@ class CallHandler:
     def _loop(self):
         """对话主循环"""
         # 首轮问候
-        welcome = "您好哇！欢迎致电成都后仰喜剧！我是AI客服小仰，有啥子需要帮忙的嘛？买票咨询都可以跟我说哈。"
+        welcome = config.read_welcome() or "您好哇！欢迎致电成都后仰喜剧！我是AI客服小仰，有啥子需要帮忙的嘛？买票咨询都可以跟我说哈。"
         self._speak(welcome)
 
         while self.call_active and self.turn < 20:
@@ -390,7 +418,7 @@ class CallHandler:
 
             # 检查结束语
             if any(kw in user_text for kw in ["再见", "拜拜", "挂了", "没其他事", "没有要"]):
-                farewell = "感谢您的来电，祝您生活愉快，再见！"
+                farewell = config.read_farewell() or "感谢您的来电，祝您生活愉快，再见！"
                 self._speak(farewell)
                 db.add_turn(self.uuid, self.turn, user_text, farewell, "end",
                            self._last_user_audio, self._last_assistant_audio)

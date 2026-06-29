@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>后仰喜剧 AI 客服 · 运营后台</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f7; color: #1d1d1f; }
+.header { background: #1d1d1f; color: #fff; padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+.header h1 { font-size: 18px; font-weight: 600; }
+.header .status { margin-left: auto; font-size: 13px; padding: 4px 12px; border-radius: 12px; }
+.status.ok { background: #30d158; color: #1d1d1f; }
+.status.warn { background: #ff9f0a; color: #1d1d1f; }
+.status.err { background: #ff453a; color: #fff; }
+.tabs { display: flex; background: #fff; border-bottom: 1px solid #e5e5ea; padding: 0 24px; }
+.tab { padding: 12px 20px; cursor: pointer; font-size: 14px; color: #8e8e93; border-bottom: 2px solid transparent; }
+.tab:hover { color: #1d1d1f; }
+.tab.active { color: #007aff; border-bottom-color: #007aff; }
+.content { max-width: 960px; margin: 24px auto; padding: 0 24px; }
+.panel { display: none; }
+.panel.active { display: block; }
+.card { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.card h3 { font-size: 15px; font-weight: 600; margin-bottom: 12px; color: #1d1d1f; }
+textarea { width: 100%; min-height: 200px; padding: 12px; border: 1px solid #e5e5ea; border-radius: 8px; font-size: 14px; font-family: inherit; resize: vertical; }
+textarea:focus { outline: none; border-color: #007aff; }
+input[type="text"] { width: 100%; padding: 10px 12px; border: 1px solid #e5e5ea; border-radius: 8px; font-size: 14px; }
+input[type="text"]:focus { outline: none; border-color: #007aff; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: 500; }
+.btn-primary { background: #007aff; color: #fff; }
+.btn-primary:hover { background: #0062cc; }
+.btn-danger { background: #ff453a; color: #fff; }
+.btn-danger:hover { background: #d6382e; }
+.btn-secondary { background: #e5e5ea; color: #1d1d1f; }
+.btn-secondary:hover { background: #d1d1d6; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+.toolbar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #e5e5ea; }
+th { color: #8e8e93; font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+tr:hover { background: #f5f5f7; }
+.toast { position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 10px; color: #fff; font-size: 14px; opacity: 0; transition: opacity 0.3s; z-index: 999; }
+.toast.show { opacity: 1; }
+.toast.success { background: #30d158; color: #1d1d1f; }
+.toast.error { background: #ff453a; }
+.kb-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border-bottom: 1px solid #e5e5ea; }
+.kb-item:last-child { border-bottom: none; }
+.kb-item .name { font-weight: 500; }
+.kb-item .meta { font-size: 12px; color: #8e8e93; }
+.call-row { cursor: pointer; }
+.call-detail { background: #f5f5f7; border-radius: 8px; padding: 12px; margin: 8px 0; }
+.turn-item { padding: 8px 0; border-bottom: 1px solid #e5e5ea; font-size: 14px; }
+.turn-item:last-child { border-bottom: none; }
+.turn-user { color: #007aff; }
+.turn-assistant { color: #30d158; }
+.audio-player { margin: 4px 0; }
+.voice-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+.voice-card { padding: 10px; border: 1px solid #e5e5ea; border-radius: 8px; cursor: pointer; text-align: center; }
+.voice-card:hover { border-color: #007aff; }
+.voice-card.selected { border-color: #007aff; background: #e8f0fe; }
+.empty { text-align: center; padding: 40px; color: #8e8e93; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🎭 后仰喜剧 · AI 客服运营后台</h1>
+  <span class="status ok" id="statusBadge">检查中...</span>
+</div>
+
+<div class="tabs" id="tabs">
+  <div class="tab active" data-tab="config">📝 配置</div>
+  <div class="tab" data-tab="knowledge">📚 知识库</div>
+  <div class="tab" data-tab="voice">🎤 音色</div>
+  <div class="tab" data-tab="calls">📞 通话记录</div>
+</div>
+
+<div class="content">
+
+<!-- ── 配置面板 ── -->
+<div class="panel active" id="panel-config">
+  <div class="card">
+    <h3>🤖 AI 人设提示词</h3>
+    <p style="font-size:13px;color:#8e8e93;margin-bottom:10px;">修改后需重启 AI Pipeline 生效</p>
+    <textarea id="promptEditor" placeholder="加载中..."></textarea>
+    <div style="margin-top:10px;"><button class="btn btn-primary" onclick="saveConfig('prompt')">💾 保存提示词</button></div>
+  </div>
+  <div class="card">
+    <h3>👋 欢迎语</h3>
+    <textarea id="welcomeEditor" style="min-height:60px;" placeholder="加载中..."></textarea>
+    <div style="margin-top:8px;"><button class="btn btn-primary btn-sm" onclick="saveConfig('welcome')">💾 保存</button></div>
+  </div>
+  <div class="card">
+    <h3>👋 结束语</h3>
+    <textarea id="farewellEditor" style="min-height:60px;" placeholder="加载中..."></textarea>
+    <div style="margin-top:8px;"><button class="btn btn-primary btn-sm" onclick="saveConfig('farewell')">💾 保存</button></div>
+  </div>
+</div>
+
+<!-- ── 知识库面板 ── -->
+<div class="panel" id="panel-knowledge">
+  <div class="toolbar">
+    <button class="btn btn-primary" onclick="showNewKnowledge()">📄 新增知识</button>
+  </div>
+  <div class="card" id="knowledgeList"></div>
+  <div class="card" id="knowledgeEditor" style="display:none;">
+    <h3 id="knowledgeEditorTitle">编辑知识</h3>
+    <input type="text" id="knowledgeName" placeholder="知识名称（如：票价信息）" style="margin-bottom:8px;">
+    <textarea id="knowledgeContent" placeholder="请输入知识内容（Markdown 格式）..." style="min-height:200px;"></textarea>
+    <div style="margin-top:10px;display:flex;gap:8px;">
+      <button class="btn btn-primary" onclick="saveKnowledge()">💾 保存</button>
+      <button class="btn btn-secondary" onclick="cancelKnowledgeEdit()">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 音色面板 ── -->
+<div class="panel" id="panel-voice">
+  <div class="card">
+    <h3>当前音色</h3>
+    <p id="currentVoiceDisplay" style="font-size:16px;margin-bottom:10px;">加载中...</p>
+    <button class="btn btn-primary" onclick="refreshSpeakers()">🔄 刷新音色列表</button>
+  </div>
+  <div class="card">
+    <h3>可用音色</h3>
+    <div class="voice-list" id="speakerList"><p class="empty">加载中...</p></div>
+  </div>
+  <div class="card">
+    <h3>测试 TTS</h3>
+    <textarea id="ttsTestText" style="min-height:60px;" placeholder="输入要合成的文本...">您好哇，欢迎致电成都后仰喜剧！</textarea>
+    <div style="margin-top:8px;display:flex;gap:8px;align-items:center;">
+      <button class="btn btn-primary" onclick="testTTS()">🔊 试听</button>
+      <audio id="ttsPreview" controls style="display:none;"></audio>
+    </div>
+  </div>
+</div>
+
+<!-- ── 通话记录面板 ── -->
+<div class="panel" id="panel-calls">
+  <div class="toolbar">
+    <button class="btn btn-secondary" onclick="loadCalls()">🔄 刷新</button>
+  </div>
+  <div class="card" id="callsList"><p class="empty">加载中...</p></div>
+</div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── 工具 ──
+function toast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+async function api(url, opts={}) {
+  try {
+    const resp = await fetch(url, { headers: {'Content-Type':'application/json'}, ...opts });
+    if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.detail || resp.statusText); }
+    return await resp.json();
+  } catch(e) { toast(e.message, 'error'); throw e; }
+}
+
+// ── Tab 切换 ──
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+// ── 服务状态 ──
+async function checkStatus() {
+  try {
+    const s = await api('/api/status');
+    const badge = document.getElementById('statusBadge');
+    const allOk = Object.values(s).every(v => v === 'running' || v === 'ready' || v === 'configured');
+    if (allOk) { badge.textContent = '🟢 全部正常'; badge.className = 'status ok'; }
+    else { badge.textContent = '🟡 部分异常'; badge.className = 'status warn'; }
+  } catch { document.getElementById('statusBadge').textContent = '🔴 连接失败'; }
+}
+setInterval(checkStatus, 15000);
+
+// ── 配置管理 ──
+async function loadConfig() {
+  try {
+    const p = await api('/api/config/prompt');
+    document.getElementById('promptEditor').value = p.content;
+    const w = await api('/api/config/welcome');
+    document.getElementById('welcomeEditor').value = w.content;
+    const f = await api('/api/config/farewell');
+    document.getElementById('farewellEditor').value = f.content;
+  } catch {}
+}
+
+async function saveConfig(type) {
+  const map = { prompt:'promptEditor', welcome:'welcomeEditor', farewell:'farewellEditor' };
+  const content = document.getElementById(map[type]).value;
+  await api(`/api/config/${type}`, { method:'PUT', body: JSON.stringify({content}) });
+  toast(`${type === 'prompt' ? '提示词' : type === 'welcome' ? '欢迎语' : '结束语'} 已保存`);
+}
+
+// ── 知识库 ──
+let editingKnowledge = null;
+
+async function loadKnowledge() {
+  try {
+    const data = await api('/api/knowledge');
+    const list = document.getElementById('knowledgeList');
+    if (!data.files.length) { list.innerHTML = '<p class="empty">暂无知识条目，点击上方「新增知识」添加</p>'; return; }
+    list.innerHTML = data.files.map(f => `
+      <div class="kb-item">
+        <div>
+          <div class="name">📄 ${f.name}</div>
+          <div class="meta">${f.updated_at} · ${f.size} 字节</div>
+        </div>
+        <div style="display:flex;gap:4px;">
+          <button class="btn btn-secondary btn-sm" onclick="editKnowledge('${f.name}')">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteKnowledge('${f.name}')">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+  } catch {}
+}
+
+function showNewKnowledge() {
+  editingKnowledge = null;
+  document.getElementById('knowledgeEditorTitle').textContent = '新增知识';
+  document.getElementById('knowledgeName').value = '';
+  document.getElementById('knowledgeName').disabled = false;
+  document.getElementById('knowledgeContent').value = '';
+  document.getElementById('knowledgeEditor').style.display = 'block';
+}
+
+async function editKnowledge(name) {
+  try {
+    const data = await api(`/api/knowledge/${name}`);
+    editingKnowledge = name;
+    document.getElementById('knowledgeEditorTitle').textContent = `编辑知识：${name}`;
+    document.getElementById('knowledgeName').value = name;
+    document.getElementById('knowledgeName').disabled = true;
+    document.getElementById('knowledgeContent').value = data.content;
+    document.getElementById('knowledgeEditor').style.display = 'block';
+  } catch {}
+}
+
+function cancelKnowledgeEdit() {
+  document.getElementById('knowledgeEditor').style.display = 'none';
+  editingKnowledge = null;
+}
+
+async function saveKnowledge() {
+  const name = document.getElementById('knowledgeName').value.trim();
+  const content = document.getElementById('knowledgeContent').value;
+  if (!name) { toast('请输入知识名称', 'error'); return; }
+  if (editingKnowledge) {
+    await api(`/api/knowledge/${editingKnowledge}`, { method:'PUT', body: JSON.stringify({name, content}) });
+    toast('知识已更新');
+  } else {
+    await api('/api/knowledge', { method:'POST', body: JSON.stringify({name, content}) });
+    toast('知识已新增');
+  }
+  cancelKnowledgeEdit();
+  loadKnowledge();
+}
+
+async function deleteKnowledge(name) {
+  if (!confirm(`确定删除「${name}」？`)) return;
+  await api(`/api/knowledge/${name}`, { method:'DELETE' });
+  toast('已删除');
+  loadKnowledge();
+}
+
+// ── 音色管理 ──
+let currentSpeaker = '豪哥';
+
+async function loadVoice() {
+  try {
+    const v = await api('/api/config/voice');
+    currentSpeaker = v.speaker;
+    document.getElementById('currentVoiceDisplay').textContent = `🎤 ${v.speaker}`;
+  } catch {}
+}
+
+async function refreshSpeakers() {
+  try {
+    const data = await api('/api/speakers');
+    const list = document.getElementById('speakerList');
+    if (!data.speakers || !data.speakers.length) {
+      list.innerHTML = '<p class="empty">暂无可用音色，请确认 CosyVoice 服务已启动</p>';
+      return;
+    }
+    list.innerHTML = data.speakers.map(s => `
+      <div class="voice-card ${s.voice_id === currentSpeaker ? 'selected' : ''}" 
+           onclick="selectVoice('${s.voice_id}')">
+        <div style="font-size:24px;margin-bottom:4px;">🎤</div>
+        <div>${s.name || s.voice_id}</div>
+        <div style="font-size:11px;color:#8e8e93;">${s.type || 'custom'}</div>
+      </div>
+    `).join('');
+  } catch {}
+}
+
+async function selectVoice(speaker) {
+  currentSpeaker = speaker;
+  await api('/api/config/voice', { method:'PUT', body: JSON.stringify({content: speaker}) });
+  document.getElementById('currentVoiceDisplay').textContent = `🎤 ${speaker}`;
+  toast(`音色已切换为「${speaker}」`);
+  refreshSpeakers();
+}
+
+async function testTTS() {
+  const text = document.getElementById('ttsTestText').value || '您好哇';
+  const audio = document.getElementById('ttsPreview');
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = '⏳ 合成中...';
+  try {
+    const resp = await fetch('/api/test-tts', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({content: text})
+    });
+    if (!resp.ok) throw new Error('合成失败');
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    audio.src = url; audio.style.display = 'block'; audio.play();
+  } catch(e) { toast('TTS 测试失败: ' + e.message, 'error'); }
+  finally { btn.disabled = false; btn.textContent = '🔊 试听'; }
+}
+
+// ── 通话记录 ──
+let callDetailsVisible = {};
+
+async function loadCalls() {
+  try {
+    const data = await api('/api/calls');
+    const list = document.getElementById('callsList');
+    if (!data.calls || !data.calls.length) {
+      list.innerHTML = '<p class="empty">暂无通话记录，拨打 5000 测试后即可看到</p>';
+      return;
+    }
+    list.innerHTML = `<table>
+      <thead><tr><th>时间</th><th>主叫</th><th>被叫</th><th>时长</th><th>状态</th><th></th></tr></thead>
+      <tbody>${data.calls.map(c => `
+        <tr class="call-row" onclick="toggleCallDetail('${c.call_id}')">
+          <td>${c.start_time_str || '-'}</td>
+          <td>${c.caller || '-'}</td>
+          <td>${c.dest || '-'}</td>
+          <td>${c.duration_sec || 0}s</td>
+          <td>${c.status === 'completed' ? '✅ 完成' : c.status === 'error' ? '❌ 异常' : '🔄 进行中'}</td>
+          <td><button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();toggleCallDetail('${c.call_id}')">📝 详情</button></td>
+        </tr>
+        <tr id="detail-${c.call_id}" style="display:none;"><td colspan="6"><div class="call-detail" id="detailContent-${c.call_id}">加载中...</div></td></tr>
+      `).join('')}</tbody></table>`;
+  } catch {}
+}
+
+async function toggleCallDetail(callId) {
+  const row = document.getElementById(`detail-${callId}`);
+  const content = document.getElementById(`detailContent-${callId}`);
+  if (row.style.display !== 'none') { row.style.display = 'none'; return; }
+  row.style.display = 'table-row';
+  try {
+    const data = await api(`/api/calls/${callId}`);
+    if (!data.turns || !data.turns.length) {
+      content.innerHTML = '<p class="empty">暂无对话记录</p>'; return;
+    }
+    content.innerHTML = data.turns.map(t => `
+      <div class="turn-item">
+        <div><strong>第 ${t.turn_number} 轮</strong></div>
+        <div class="turn-user">🎤 用户: ${t.user_text || '(未识别)'}</div>
+        <div class="turn-assistant">🤖 小仰: ${t.assistant_text || ''}</div>
+        <div style="font-size:12px;color:#8e8e93;">
+          动作: ${t.action || 'info'}
+          ${t.user_audio_path ? ` | <a href="/api/records/${callId}/turn_${t.turn_number}_user.wav" target="_blank">🔊 用户录音</a>` : ''}
+          ${t.assistant_audio_path ? ` | <a href="/api/records/${callId}/turn_${t.turn_number}_assistant.wav" target="_blank">🔊 AI 回复</a>` : ''}
+        </div>
+      </div>
+    `).join('');
+  } catch { content.innerHTML = '<p style="color:#ff453a;">加载失败</p>'; }
+}
+
+// ── 初始化 ──
+loadConfig();
+loadKnowledge();
+loadVoice();
+refreshSpeakers();
+loadCalls();
+checkStatus();
+</script>
+</body>
+</html>

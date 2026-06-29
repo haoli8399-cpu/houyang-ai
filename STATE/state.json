@@ -41,6 +41,11 @@
     "call_records_db": {
       "status": "running",
       "note": "SQLite records/calls.db, calls+turns 双表"
+    },
+    "admin_backend": {
+      "status": "running",
+      "port": 3001,
+      "note": "FastAPI 运营后台，含配置/知识库/音色/通话记录管理"
     }
   },
   "blockers": [

@@ -19,3 +19,4 @@
 | D-20260629-004 | 2026-06-29 | 清理 CodeBuddy 遗留文件 + 初始化 git + 推送到 GitHub（haoli8399-cpu/houyang-ai） | Hermes Agent | ✅ 已执行 | 全部项目 |
 | D-20260629-005 | 2026-06-29 | 多 Agent 架构优化：精简角色、新增子 Agent 验证协议、文件锁规则、TASK.md 生命周期 | Hermes Agent | ✅ 已执行 | COLLABORATION.md, AGENT_RULES.md, FROZEN.md |
 | D-20260629-006 | 2026-06-29 | 通话记录存储（SQLite）+ 录音持久化：新建 db.py，改造 CallHandler 记录每轮对话和录音 | Hermes Agent | ✅ 已执行 | db.py, ai_pipeline.py |
+| D-20260629-007 | 2026-06-29 | Phase 2 运营后台：FastAPI + 配置管理(提示词/欢迎语/结束语) + 知识库管理 + 音色管理 + 通话记录查看 + AI Pipeline 配置化 | Hermes Agent | ✅ 已执行 | admin/app.py, admin/templates/index.html, config/*, ai_pipeline.py |
