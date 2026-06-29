@@ -13,6 +13,7 @@ cosyvoice/
 
 # Runtime
 *.pid
+.pipecat_pid
 pipecat.log
 pipeline_stdout.log
 
