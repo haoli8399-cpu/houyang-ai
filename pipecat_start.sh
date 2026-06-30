@@ -74,6 +74,10 @@ case "${1:-status}" in
     
     echo -n "  AI Pipeline (v3 单socket)... "
     cd "$WORK"
+    # 加载 .env 环境变量（DeepSeek API Key 等）
+    if [ -f "$WORK/.env" ]; then
+      set -a; source "$WORK/.env"; set +a
+    fi
     nohup "$VENV/bin/python3" -u "$WORK/ai_pipeline.py" --listen > "$WORK/pipecat.log" 2>&1 &
     PID=$!
     echo $PID > "$PID_FILE"
