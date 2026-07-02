@@ -184,16 +184,18 @@ def update_voice(data: TextConfig):
 
 @app.post("/api/test-tts")
 def test_tts(data: TextConfig):
-    """测试指定音色的 TTS 合成"""
+    """测试当前配置音色的 TTS 合成"""
     text = data.content or "您好哇，欢迎致电成都后仰喜剧！"
+    # 从配置文件读取当前音色，不从前端传参
+    speaker = _read_file(CONFIG_DIR / "voice.txt").strip() or "嘉宾1"
     output = "/tmp/admin_tts_test.wav"
     try:
         result = subprocess.run(
             ["curl", "-s", "-X", "POST", f"{COSYVOICE_URL}/tts",
              "-H", "Content-Type: application/json",
-             "-d", json.dumps({"text": text, "speaker": "豪哥" if not data.content else data.content}),
-             "--max-time", "30", "-o", output],
-            capture_output=True, timeout=35,
+             "-d", json.dumps({"text": text, "speaker": speaker, "format": "wav"}),
+             "--max-time", "120", "-o", output],
+            capture_output=True, timeout=130,
         )
         if result.returncode == 0 and Path(output).stat().st_size > 100:
             return FileResponse(output, media_type="audio/wav")

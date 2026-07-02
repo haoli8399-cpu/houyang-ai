@@ -59,7 +59,7 @@ class Config:
     deepseek_api_key: str = os.environ.get("DEEPSEEK_API_KEY", "")
     deepseek_model: str = "deepseek-chat"
     deepseek_base_url: str = "https://api.deepseek.com"
-    work_dir: str = str(Path.home() / "pipecat-ai")
+    work_dir: str = str(Path.home() / "projects/houyang-ai/pipecat-ai")
 
     @property
     def config_dir(self) -> Path:
@@ -400,9 +400,21 @@ class CallHandler:
 
     def _loop(self):
         """对话主循环"""
-        # 首轮问候
-        welcome = config.read_welcome() or "您好哇！欢迎致电成都后仰喜剧！我是AI客服小仰，有啥子需要帮忙的嘛？买票咨询都可以跟我说哈。"
-        self._speak(welcome)
+        # 首轮问候 — 直接播预生成音频（避免实时 TTS 等待 40-70s）
+        welcome_path = config.config_dir / "welcome.wav"
+        if welcome_path.exists():
+            log.info("🔊 播放预生成欢迎语")
+            ESLAPI.play_file(self.uuid, str(welcome_path))
+            welcome_text = config.read_welcome() or "您好，欢迎致电后仰喜剧，我是小仰，请问有什么可以帮您？"
+            # 估算播放时间
+            play_sec = max(2.0, len(welcome_text) / 3.5 + 1.0)
+            log.info(f"⏳ 等待 {play_sec:.1f}s 播放完毕")
+            time.sleep(play_sec)
+            # 记录首轮到数据库
+            db.add_turn(self.uuid, 0, "(silence)", welcome_text, "info", "", str(welcome_path))
+        else:
+            welcome = config.read_welcome() or "您好，欢迎致电后仰喜剧，我是小仰，请问有什么可以帮您？"
+            self._speak(welcome)
 
         while self.call_active and self.turn < 20:
             self.turn += 1
@@ -452,11 +464,9 @@ class CallHandler:
     def _capture_speech(self) -> Optional[str]:
         """录音 → ASR 转写"""
         if not ASRClient.is_ready():
-            log.info("⏳ ASR 未就绪，等待键盘输入...")
-            try:
-                return input("🎤 (模拟) > ").strip() or "我不清楚"
-            except EOFError:
-                return "我不清楚"
+            log.info("⏳ ASR 仍未就绪，跳过本轮回合（通话继续，不阻塞）")
+            time.sleep(0.5)
+            return None
 
         record_path = f"/tmp/pipecat_turn_{self.uuid[:8]}_{self.turn}.wav"
 
@@ -570,12 +580,38 @@ def listen_mode():
 
     conn.subscribe("CHANNEL_CREATE CHANNEL_ANSWER CHANNEL_HANGUP COMPLETE")
 
-    # 预热 ASR 模型（首次加载约 5 秒，避免通话中阻塞）
-    log.info("🔄 预热 ASR 模型...")
-    if ASRClient.is_ready():
+    # 预热 ASR 模型（首次加载约 5~30 秒，避免通话中阻塞）
+    log.info("🔄 预热 ASR 模型（最多重试 3 次，间隔 5 秒）...")
+    asr_ready = False
+    for retry in range(3):
+        if ASRClient.is_ready():
+            asr_ready = True
+            break
+        if retry < 2:
+            log.info(f"⏳ ASR 预热重试 {retry+1}/3...")
+            time.sleep(5)
+    if asr_ready:
         log.info("✅ ASR 预热完成")
     else:
-        log.warning("⚠️ ASR 预热失败，将使用键盘输入兜底")
+        log.warning("⚠️ ASR 预热失败（3 次重试后仍不可用），通话中将跳过 ASR 步骤")
+        log.warning("   → 检查: faster-whisper 是否安装, torch 是否正常")
+
+    # 预生成欢迎语音频（CosyVoice CPU 模式约 40s，启动时做一次）
+    if TTSClient.is_ready():
+        log.info("🔊 预生成欢迎语音频...")
+        welcome_text = config.read_welcome() or "您好，欢迎致电后仰喜剧，我是小仰，请问有什么可以帮您？"
+        welcome_path = config.config_dir / "welcome.wav"
+        if not welcome_path.exists():
+            TTSClient.synthesize(welcome_text, str(welcome_path))
+        if welcome_path.exists():
+            log.info(f"✅ 欢迎语就绪 ({welcome_path.stat().st_size}b)")
+        # 也预生成结束语
+        farewell_text = config.read_farewell() or "感谢您的来电，再见！"
+        farewell_path = config.config_dir / "farewell.wav"
+        if not farewell_path.exists():
+            TTSClient.synthesize(farewell_text, str(farewell_path))
+        if farewell_path.exists():
+            log.info(f"✅ 结束语就绪 ({farewell_path.stat().st_size}b)")
 
     log.info("✅ 事件监听已启动 (Ctrl+C 退出)")
     log.info(f"📡 等待拨分机 {config.ai_agent_ext} ...")
